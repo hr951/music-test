@@ -5,6 +5,8 @@ process.env.UV_USE_IO_URING = '0';
 // ★ これが決定打 ★
 require('sodium-native');
 
+require("./server.js");
+
 const { Client, GatewayIntentBits } = require('discord.js');
 const { Player, QueueRepeatMode } = require('discord-player');
 const { SoundCloudExtractor } = require('@discord-player/extractor');
