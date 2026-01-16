@@ -1,4 +1,7 @@
 const { SlashCommandBuilder, EmbedBuilder } = require("discord.js");
+const yts = require('yt-search');
+
+const color = "#ffffff";
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -7,7 +10,7 @@ module.exports = {
     .addStringOption(option =>
       option
         .setName("query")
-        .setDescription("URL または 検索ワード")
+        .setDescription("URL または 検索ワード / 曲名の後ろに作者を入れると精度が上がります")
         .setRequired(true)
     ),
 
@@ -16,34 +19,53 @@ module.exports = {
     const kazagumo = interaction.client.kazagumo;
     const query = interaction.options.getString('query');
 
-    if (!interaction.guild) return;
-    if (!interaction.member.voice.channel) return interaction.reply("VCに入ってください");
-
-    if (!kazagumo.shoukaku.nodes.size) {
-      return interaction.reply("再生サーバーに接続できていません。\n少し待ってからやり直してください。");
-    }
-
     await interaction.deferReply();
 
-    try {
-      let res = await kazagumo.search(query);
-      if (!res.tracks.length) return interaction.editReply("見つかりませんでした");
+    const ytResult = await yts(query).catch(() => null);
+    if (!ytResult || !ytResult.videos.length) {
+      return interaction.editReply("YouTubeで曲の情報が見つかりませんでした");
+    }
+    const video = ytResult.videos[0]; // 一番上の候補
 
-      const newPlayer = await kazagumo.createPlayer({
-        guildId: interaction.guild.id,
-        textId: interaction.channel.id,
-        voiceId: interaction.member.voice.channel.id,
-        deaf: true
-      });
+    if (!video) return interaction.editReply("曲が見つかりませんでした");
 
-      newPlayer.data.set("textChannel", interaction.channel);
-      newPlayer.queue.add(res.tracks[0]);
-      if (!newPlayer.playing && !newPlayer.paused) newPlayer.play();
-      return interaction.editReply(`**${res.tracks[0].title}**をキューに追加しました`);
-    } catch (error) {
-      console.error(error);
-      return interaction.editReply("曲の再生中にエラーが発生しました。");
+    const searchTitle = `${video.title} ${video.author.name}`;
+    var res = await kazagumo.search(searchTitle, { engine: "soundcloud" });
+
+    if (!res.tracks.length) {
+      var res = await kazagumo.search(query, { engine: "soundcloud" });
+      if (!res.tracks.length) {
+        return interaction.editReply("SoundCloudで音源が見つかりませんでした");
+      }
     }
 
+    const track = res.tracks[0];
+
+    track.title = video.title;
+    track.author = video.author.name;
+    track.thumbnail = video.thumbnail;
+
+    const player = await kazagumo.createPlayer({
+      guildId: interaction.guild.id,
+      textId: interaction.channel.id,
+      voiceId: interaction.member.voice.channel.id,
+      deaf: true
+    });
+
+    player.data.set("textChannel", interaction.channel);
+    player.queue.add(track);
+    if (!player.playing && !player.paused) player.play();
+
+    const embed = new EmbedBuilder()
+      .setTitle("曲をキューに追加しました")
+      .setDescription(`[**${track.title}**](${track.uri})`)
+      .addFields(
+        { name: "アーティスト: ", value: track.author, inline: true },
+        { name: "長さ: ", value: `${Math.floor(track.length / 60000)}:${Math.floor((track.length % 60000) / 1000).toString().padStart(2, '0')}`, inline: true }
+      )
+      .setImage(track.thumbnail)
+      .setColor(color);
+
+    return interaction.editReply({ embeds: [embed] });
   },
 };
