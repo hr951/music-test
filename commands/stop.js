@@ -1,5 +1,7 @@
 const { SlashCommandBuilder, EmbedBuilder } = require("discord.js");
 
+const color = "#ffffff";
+
 module.exports = {
     data: new SlashCommandBuilder()
         .setName("stop")
@@ -13,11 +15,16 @@ module.exports = {
         if (!interaction.guild) return;
 
         if (!kazagumo.shoukaku.nodes.size) {
-            return interaction.reply("再生サーバーに接続できていません。\n少し待ってからやり直してください。");
+            return interaction.reply({ content: "再生サーバーに接続できていません。\n少し待ってからやり直してください。", ephemeral: true });
         }
 
-        if (!player) return interaction.reply("再生中の曲がありません");
+        if (!player) return interaction.reply({ content: "再生中の曲がありません", ephemeral: true });
         player.destroy();
-        return interaction.reply("再生を停止し、退出しました");
+
+        const embed = new EmbedBuilder()
+            .setTitle("再生を停止し、VCから退出しました")
+            .setColor(color);
+
+        return interaction.reply({ embeds: [embed] });
     },
 };
