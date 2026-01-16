@@ -1,4 +1,4 @@
-const { Client, GatewayIntentBits, Collection } = require('discord.js');
+const { Client, GatewayIntentBits, Collection, EmbedBuilder } = require('discord.js');
 const { Connectors } = require('shoukaku');
 const { Kazagumo } = require('kazagumo');
 const path = require('node:path');
@@ -6,8 +6,9 @@ const fs = require('node:fs');
 require("dotenv").config();
 require("./server.js");
 
+const color = "#ffffff";
+
 const token = process.env.DISCORD_BOT_TOKEN;
-const PREFIX = "!";
 const Nodes = [{
     name: 'Render-Node',
     url: process.env.LAVA_LINK_URL, // URL (PORT -> 443)
@@ -38,12 +39,40 @@ const kazagumo = new Kazagumo({
 }, new Connectors.DiscordJS(client), Nodes);
 
 kazagumo.on("playerStart", (player, track) => {
-    player.data.get("textChannel").send(`再生中: **${track.title}**`);
+    const embed = new EmbedBuilder()
+        .setTitle(player.queue.current.title)
+        .setURL(player.queue.current.uri)
+        .addFields(
+            { name: "アーティスト: ", value: player.queue.current.author, inline: true },
+            { name: "長さ: ", value: `${Math.floor(player.queue.current.length / 60000)}:${Math.floor((player.queue.current.length % 60000) / 1000).toString().padStart(2, '0')}`, inline: true }
+        )
+        .setImage(player.queue.current.thumbnail)
+        .setColor(color);
+
+    player.data.get("textChannel").send({ content: "再生中", embeds: [embed] });
 });
 
 client.kazagumo = kazagumo;
 client.kazagumo.shoukaku.on('ready', (name) => console.log(`Lavalink Node: ${name} が接続されました！`));
 // ----- Kazagumo初期化終了 -----
+
+// ----- エラーハンドリング -----
+kazagumo.shoukaku.on('error', (name, error) => {
+    console.error(`Lavalink Node[${name}] でエラーが発生しました:`, error);
+});
+
+kazagumo.on('error', (name, error) => {
+    console.error(`Kazagumo[${name}] でエラーが発生しました:`, error);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+});
+
+process.on('uncaughtException', (err) => {
+    console.error('Uncaught Exception:', err);
+});
+// ----- エラーハンドリング終了 -----
 
 // ---- コマンド読み込み処理 ----
 client.commands = new Collection();
@@ -75,7 +104,7 @@ client.on('interactionCreate', async interaction => {
             await command.execute(interaction);
         } catch (error) {
             try {
-                await interaction.reply({ content: 'error', ephemeral: true });
+                await interaction.editReply({ content: 'error', ephemeral: true });
                 console.error(error);
             } catch (error) {
                 console.error(error);
@@ -83,7 +112,6 @@ client.on('interactionCreate', async interaction => {
         }
     };
 });
-// ---- コマンド読み込み処理終了 ----
 
 // 誰かがボイスチャンネルからいなくなった時の処理
 client.on("voiceStateUpdate", (oldState, newState) => {
