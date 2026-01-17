@@ -104,14 +104,20 @@ client.on('interactionCreate', async interaction => {
             await command.execute(interaction);
         } catch (error) {
             try {
-                await interaction.editReply({ content: 'error', ephemeral: true });
+                await interaction.reply({ content: 'error', ephemeral: true });
                 console.error(error);
             } catch (error) {
-                console.error(error);
+                try {
+                    await interaction.editReply({ content: 'error', ephemeral: true });
+                    console.error(error);
+                } catch (error) {
+                    console.error(error);
+                }
             }
         }
     };
 });
+// ---- コマンド読み込み処理終了 ----
 
 // 誰かがボイスチャンネルからいなくなった時の処理
 client.on("voiceStateUpdate", (oldState, newState) => {
