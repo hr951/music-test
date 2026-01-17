@@ -3,8 +3,8 @@
  - LavaLinkサーバーを持っている<br>
    -> 持っていない方は[こちら](https://github.com/lavalink-devs/Lavalink)<br>
 > [!Note]
-> もろもろ設定済みのフォークは[こちら](https://github.com/hr951/LavaLink)
-> ※
+> もろもろ設定済みのフォークは[こちら](https://github.com/hr951/LavaLink)<br>
+> ※`application.yml`の`password`の値は**__必ず__**変更してください
 ### 環境変数
 DISCORD_BOT_TOKEN ...... Botのトークン<br>
 LAVA_LINK_URL ...... LavaLinkサーバーのURL (URLの後ろに443のポートを指定する) ex. example.com:443<br>
