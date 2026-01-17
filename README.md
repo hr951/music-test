@@ -1,6 +1,6 @@
 # MusicBot
 ### 前提条件
- - LavaLinkサーバーを持っている
+ - LavaLinkサーバーを持っている<br>
    -> 持っていない方は[こちら](https://github.com/hr951/LavaLink)
  - Nodeが動く
 ### 環境変数
